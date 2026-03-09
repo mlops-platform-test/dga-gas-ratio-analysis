@@ -1,0 +1,121 @@
+config_version: 1
+
+meta:
+  name: "gas_ratio_analysis"
+  owner: "dx04"
+  model_kind: "logic"
+
+pipeline:
+  schedule:
+    cron: null
+    timezone: "Asia/Seoul"
+  retries:
+    count: 1
+    delay_minutes: 1
+  executor:
+    type: "kubernetes"
+    kubernetes:
+      namespace: "mlops"
+      image_pull_policy: "IfNotPresent"
+      image_pull_secrets: ["harbor-pull-secret"]
+      resources:
+        cpu_request: "1"
+        cpu_limit: "2"
+        memory_request: "1Gi"
+        memory_limit: "2Gi"
+        gpu_limit: 0
+
+mlflow:
+  experiment_name: "dx04/gas_ratio_analysis"
+
+stages:
+  kind: logic
+  prepare_data:
+    callable: "models.gas_ratio_analysis.logic.prepare_data"
+  run_logic:
+    callable: "models.gas_ratio_analysis.logic.run_logic"
+  export_result:
+    callable: "models.gas_ratio_analysis.logic.export_result"
+  register_logic_model:
+    callable: "models.gas_ratio_analysis.logic.register_logic_model"
+
+serving:
+  enabled: true
+  mode: bentoml-server
+  protocol: http
+  selector:
+    strategy: "latest"
+  input:
+    kind: tabular
+    batch: true
+    fields:
+      - name: h2
+        dtype: float32
+        description: "H2 농도 (ppm)"
+      - name: ch4
+        dtype: float32
+        description: "CH4 농도 (ppm)"
+      - name: c2h2
+        dtype: float32
+        description: "C2H2 농도 (ppm)"
+      - name: c2h4
+        dtype: float32
+        description: "C2H4 농도 (ppm)"
+      - name: c2h6
+        dtype: float32
+        description: "C2H6 농도 (ppm)"
+      - name: co
+        dtype: float32
+        description: "CO 농도 (ppm)"
+      - name: co2
+        dtype: float32
+        description: "CO2 농도 (ppm)"
+  output:
+    fields:
+      - name: R1
+        dtype: float32
+        description: "C2H2/C2H4 비율"
+      - name: R2
+        dtype: float32
+        description: "CH4/H2 비율"
+      - name: R3
+        dtype: float32
+        description: "C2H4/C2H6 비율"
+      - name: rogers_case
+        dtype: string
+        description: "Rogers 비율법 케이스 (Case 0~5, Unknown)"
+      - name: rogers_diagnosis
+        dtype: string
+        description: "Rogers 비율법 진단"
+      - name: iec_fault_type
+        dtype: string
+        description: "IEC 비율법 고장 유형 (PD/D1/D2/T1/T2/T3/Unknown)"
+      - name: iec_diagnosis
+        dtype: string
+        description: "IEC 비율법 진단"
+      - name: insulation_ratio
+        dtype: string
+        description: "CO2/CO 비율"
+      - name: insulation_status
+        dtype: string
+        description: "고체 절연 상태 (정상/주의/경고/위험)"
+      - name: insulation_diagnosis
+        dtype: string
+        description: "고체 절연 상세 진단"
+
+deployment:
+  enabled: true
+  registry: "reg.atgdevs.com/mlops"
+  image_name: "gas_ratio_analysis"
+  tags:
+    - "latest"
+    - "run-{run_id}"
+  description: "Gas Ratio Analysis DGA model - Rogers/IEC 비율법 + 고체 절연 모니터링"
+
+container:
+  deploy:
+    dockerfile: "Dockerfile.deploy"
+    requirements: "requirements.deploy.txt"
+    image_name: "gas_ratio_analysis"
+    base_image: "python:3.11-slim"
+    registry: "reg.atgdevs.com/mlops"
