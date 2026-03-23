@@ -102,7 +102,7 @@ serving:
 deployment:
   enabled: true
   registry: "reg.atgdevs.com/mlops"
-  image_name: "gas_ratio_analysis"
+  image_name: "gas_ratio_analysis-deploy"
   tags:
     - "latest"
     - "run-{run_id}"
@@ -118,6 +118,6 @@ container:
   deploy:
     dockerfile: "Dockerfile.deploy"
     requirements: "requirements.deploy.txt"
-    image_name: "gas_ratio_analysis"
+    image_name: "gas_ratio_analysis-deploy"
     base_image: "python:3.11-slim"
     registry: "reg.atgdevs.com/mlops"
