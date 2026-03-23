@@ -30,14 +30,10 @@ mlflow:
 
 stages:
   kind: logic
-  prepare_data:
-    callable: "models.gas_ratio_analysis.logic.prepare_data"
-  run_logic:
-    callable: "models.gas_ratio_analysis.logic.run_logic"
-  export_result:
-    callable: "models.gas_ratio_analysis.logic.export_result"
-  register_logic_model:
-    callable: "models.gas_ratio_analysis.logic.register_logic_model"
+  prepare:
+    callable: "models.gas_ratio_analysis.logic.prepare"
+  execute:
+    callable: "models.gas_ratio_analysis.logic.execute"
 
 serving:
   enabled: true
@@ -113,9 +109,15 @@ deployment:
   description: "Gas Ratio Analysis DGA model - Rogers/IEC 비율법 + 고체 절연 모니터링"
 
 container:
+  execute:
+    dockerfile: "Dockerfile.execute"
+    requirements: "requirements.execute.txt"
+    image_name: "gas_ratio_analysis-execute"
+    base_image: "python:3.11-slim"
+    registry: "reg.atgdevs.com/mlops"
   deploy:
     dockerfile: "Dockerfile.deploy"
     requirements: "requirements.deploy.txt"
-    image_name: "gas_ratio_analysis"
+    image_name: "gas_ratio_analysis-deploy"
     base_image: "python:3.11-slim"
     registry: "reg.atgdevs.com/mlops"
